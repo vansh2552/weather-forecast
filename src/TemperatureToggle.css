@@ -1,0 +1,73 @@
+/* TemperatureToggle.css */
+
+.toggle-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-top: 20px;
+    padding-left: 20px;
+  }
+  
+  .toggle-cylinder {
+    position: relative;
+    width: 70px;  /* Reduced width */
+    height: 30px; /* Reduced height */
+    background: #e0e0e0;
+    border-radius: 15px; /* Adjust border radius to fit height */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;  /* Reduced padding */
+    transition: background-color 0.3s ease;
+  }
+  
+  .toggle-cylinder.left {
+    background: #c8e6c9; /* Greenish color when Celsius is active */
+  }
+  
+  .toggle-cylinder.right {
+    background: #ffcdd2; /* Reddish color when Fahrenheit is active */
+  }
+  
+  .toggle-labels {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    transform: translateY(-50%);
+    pointer-events: none; /* Make labels unclickable */
+    width: 75%;
+    padding: 0 8px;  /* Adjust padding to ensure labels fit */
+    font-family: Arial, sans-serif;
+    font-size: 12px; /* Reduced font size */
+  }
+  
+  .label {
+    color: #757575;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+  
+  .label.active {
+    color: #000; /* Active label has black color */
+  }
+  
+  .toggle-ball {
+    position: absolute;
+    width: 25px; /* Reduced ball size */
+    height: 25px; /* Reduced ball size */
+    background-color: white;
+    border-radius: 50%;
+    top: 2.5px;
+    left: 3px;  /* Adjusted for smaller cylinder */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    transition: left 0.3s ease;
+  }
+  
+  .toggle-cylinder.right .toggle-ball {
+    left: 52px; /* Adjusted for smaller cylinder */
+  }
+  
