@@ -10,6 +10,7 @@ const CurrentTemperature = ({ city, day, temperature, weatherCondition, unit, hi
       <p style={styles.label}>Current Temperature</p>
       {weatherCondition.isRainy && <p style={styles.status}>🌧️ Rainy</p>}
       {weatherCondition.isWindy && <p style={styles.status}>💨 Windy</p>}
+      {weatherCondition.isSunny && <p style={styles.status}>☀️ Sunny</p>}
     </div>
   );
 };

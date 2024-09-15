@@ -6,6 +6,8 @@ import HourlyWeather from './HourlyTemperatures';
 import cities from './cities.json';
 import './App.css';
 import TemperatureToggle from './TemperatureToggle'; 
+import ForecastCard from './ForecastCard';
+
 
 const App = () => {
   const [currentWeather, setCurrentWeather] = useState(null);
@@ -23,8 +25,8 @@ const App = () => {
     try {
       const now = new Date();
       const startDateTime = now.toISOString().split('.')[0] + 'Z';
-      const fiveHoursLater = new Date(now.getTime() + 5 * 60 * 60 * 1000);
-      const endDateTime = fiveHoursLater.toISOString().split('.')[0] + 'Z';
+      const fiveDaysLater = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000); // 5 days later
+      const endDateTime = fiveDaysLater.toISOString().split('.')[0] + 'Z';
   
       const url = `https://api.meteomatics.com/${startDateTime}--${endDateTime}:PT1H/t_2m:C,precip_1h:mm,wind_speed_10m:ms/${lat},${lon}/json`;
   
@@ -47,16 +49,48 @@ const App = () => {
       const highTemp = Math.max(...temperatureData.map(t => t.value));
       const lowTemp = Math.min(...temperatureData.map(t => t.value));
   
+      // Map daily temperatures for forecast
+      const dailyTemps = {};
+      temperatureData.forEach(entry => {
+        const date = new Date(entry.date);
+        const day = date.toISOString().split('T')[0]; // Extract the date (YYYY-MM-DD)
+        if (!dailyTemps[day]) dailyTemps[day] = [];
+        dailyTemps[day].push(entry.value);
+      });
+  
+      // Create forecast including both date and day of the week
+      const forecast = Object.keys(dailyTemps).map(day => {
+        const temps = dailyTemps[day];
+        const date = new Date(day); // Create a date object from the day string
+        const isRainy = precipData.some(p => p.date.split('T')[0] === day && p.value > 0.5);
+        const isWindy = windData.some(w => w.date.split('T')[0] === day && w.value > 8);
+        const isSunny = !isRainy && !isWindy;
+  
+        return {
+          day: getDayOfWeek(date), // Get the day of the week (e.g., Monday)
+          date: day, // Actual date (YYYY-MM-DD)
+          high: Math.max(...temps),
+          low: Math.min(...temps),
+          weatherCondition: {
+            isRainy,
+            isWindy,
+            isSunny
+          }
+        };
+      });
+  
       setCurrentWeather({
         temperature: currentTemp.value,
         weatherCondition: {
           isRainy: nextFiveHoursPrecip.some(p => p.value > 0.5),
           isWindy: nextFiveHoursWind.some(w => w.value > 8),
+          isSunny: !nextFiveHoursPrecip.some(p => p.value > 0.5) && !nextFiveHoursWind.some(w => w.value > 8),
         },
         highTemp,
         lowTemp,
         city, // Ensure the city name is set properly
-        day: getDayOfWeek(currentTemp.date) // Get the day of the week
+        day: getDayOfWeek(currentTemp.date), // Get the day of the week
+        forecast: forecast.slice(0, 5), // Show forecast for next 5 days
       });
       setHourlyWeather(nextFiveHoursTemps);
       setError('');
@@ -65,6 +99,8 @@ const App = () => {
       setError('Failed to fetch weather data.');
     }
   };
+  
+  
   const getDayOfWeek = (date) => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[new Date(date).getDay()];
@@ -86,31 +122,31 @@ const App = () => {
 
   // Handle temperature conversion
   const convertTemperatures = (isToCelsius) => {
-    if (!currentWeather) return;
-  
-    const updatedCurrentWeather = {
-      ...currentWeather,
-      temperature: isToCelsius
-        ? fahrenheitToCelsius(currentWeather.temperature).toFixed(1)
-        : celsiusToFahrenheit(currentWeather.temperature).toFixed(1),
-      highTemp: isToCelsius
-        ? fahrenheitToCelsius(currentWeather.highTemp).toFixed(1)
-        : celsiusToFahrenheit(currentWeather.highTemp).toFixed(1),
-      lowTemp: isToCelsius
-        ? fahrenheitToCelsius(currentWeather.lowTemp).toFixed(1)
-        : celsiusToFahrenheit(currentWeather.lowTemp).toFixed(1),
-    };
-  
-    const updatedHourlyWeather = hourlyWeather.map((hour) => ({
-      ...hour,
-      value: isToCelsius
-        ? fahrenheitToCelsius(hour.value).toFixed(1)
-        : celsiusToFahrenheit(hour.value).toFixed(1),
-    }));
-  
-    setCurrentWeather(updatedCurrentWeather);
-    setHourlyWeather(updatedHourlyWeather);
+  if (!currentWeather) return;
+
+  const updatedCurrentWeather = {
+    ...currentWeather,
+    temperature: isToCelsius
+      ? fahrenheitToCelsius(currentWeather.temperature).toFixed(1)
+      : celsiusToFahrenheit(currentWeather.temperature).toFixed(1),
+    highTemp: isToCelsius
+      ? fahrenheitToCelsius(currentWeather.highTemp).toFixed(1)
+      : celsiusToFahrenheit(currentWeather.highTemp).toFixed(1),
+    lowTemp: isToCelsius
+      ? fahrenheitToCelsius(currentWeather.lowTemp).toFixed(1)
+      : celsiusToFahrenheit(currentWeather.lowTemp).toFixed(1),
   };
+
+  const updatedHourlyWeather = hourlyWeather.map((hour) => ({
+    ...hour,
+    value: isToCelsius
+      ? fahrenheitToCelsius(hour.value).toFixed(1)
+      : celsiusToFahrenheit(hour.value).toFixed(1),
+  }));
+
+  setCurrentWeather(updatedCurrentWeather);
+  setHourlyWeather(updatedHourlyWeather);
+};
 
   // Toggle temperature unit
   const toggleTemperatureUnit = () => {
@@ -146,18 +182,37 @@ const App = () => {
       {currentWeather && (
   <div>
     <CurrentTemperature
-      city={currentWeather.city} // Display the city name
-      day={currentWeather.day} // Display the day of the week
-      temperature={currentWeather.temperature}
-      weatherCondition={currentWeather.weatherCondition}
-      unit={isCelsius ? 'C' : 'F'}
-      highTemp={currentWeather.highTemp} // High temperature
-      lowTemp={currentWeather.lowTemp} // Low temperature
-    />
+  city={currentWeather.city}
+  day={currentWeather.day}
+  temperature={currentWeather.temperature}
+  weatherCondition={{
+    isRainy: currentWeather.weatherCondition.isRainy,
+    isWindy: currentWeather.weatherCondition.isWindy,
+    isSunny: currentWeather.weatherCondition.isSunny // Pass sunny condition
+  }}
+  unit={isCelsius ? 'C' : 'F'}
+  highTemp={currentWeather.highTemp}
+  lowTemp={currentWeather.lowTemp}
+/>
     <HourlyWeather
       temperatures={hourlyWeather}
       unit={isCelsius ? 'C' : 'F'}
     />
+  </div>)}
+  <h2>Five-Day Forecast</h2>
+  {currentWeather && currentWeather.forecast && (
+  <div className="forecast-container">
+    {currentWeather.forecast.map((dayForecast, index) => (
+      <ForecastCard
+        key={index}
+        day={dayForecast.day}
+        date={dayForecast.date}
+        highTemp={isCelsius ? dayForecast.high : celsiusToFahrenheit(dayForecast.high).toFixed(1)}
+        lowTemp={isCelsius ? dayForecast.low : celsiusToFahrenheit(dayForecast.low).toFixed(1)}
+        unit={isCelsius ? 'C' : 'F'}
+        weatherCondition={dayForecast.weatherCondition}
+      />
+    ))}
   </div>
 )}
     </div>
