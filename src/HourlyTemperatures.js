@@ -29,13 +29,12 @@ const styles = {
   list: {
     display: 'flex',
     justifyContent: 'space-around',
+    flexWrap: 'wrap', // Allows wrapping if needed
   },
   card: {
-    border: '1px solid #ddd',
-    borderRadius: '5px',
     padding: '10px',
     textAlign: 'center',
-    width: '120px',
+    width: '100px',
   },
   time: {
     fontSize: '16px',
@@ -50,5 +49,6 @@ const styles = {
     color: '#555',
   },
 };
+
 
 export default HourlyWeather;

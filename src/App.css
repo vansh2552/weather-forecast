@@ -41,4 +41,19 @@
   justify-content: center;
   align-items: center;
 }
+.weather-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+.current-temperature {
+  flex: 1;
+  margin-right: 20px; /* Add some space between the two sections */
+}
+
+.hourly-temperature {
+  flex: 1;
+}
 

@@ -19,37 +19,44 @@ const App = () => {
   const fahrenheitToCelsius = (fahrenheit) => (fahrenheit - 32) * 5 / 9;
 
   // Fetch the weather data for a given city (using its coordinates)
-  const fetchWeather = async (lat, lon) => {
+  const fetchWeather = async (lat, lon, city) => {
     try {
       const now = new Date();
       const startDateTime = now.toISOString().split('.')[0] + 'Z';
       const fiveHoursLater = new Date(now.getTime() + 5 * 60 * 60 * 1000);
       const endDateTime = fiveHoursLater.toISOString().split('.')[0] + 'Z';
-
+  
       const url = `https://api.meteomatics.com/${startDateTime}--${endDateTime}:PT1H/t_2m:C,precip_1h:mm,wind_speed_10m:ms/${lat},${lon}/json`;
-
+  
       const response = await axios.get(url, {
         auth: {
           username: 'onebanc_gandhi_vansh',
           password: '7TSiH7sz8k',
         },
       });
-
+  
       const temperatureData = response.data.data.find(item => item.parameter === 't_2m:C').coordinates[0].dates;
       const precipData = response.data.data.find(item => item.parameter === 'precip_1h:mm').coordinates[0].dates;
       const windData = response.data.data.find(item => item.parameter === 'wind_speed_10m:ms').coordinates[0].dates;
-
+  
       const currentTemp = temperatureData[0];
       const nextFiveHoursTemps = temperatureData.slice(1, 6);
       const nextFiveHoursPrecip = precipData.slice(1, 6);
       const nextFiveHoursWind = windData.slice(1, 6);
-
+  
+      const highTemp = Math.max(...temperatureData.map(t => t.value));
+      const lowTemp = Math.min(...temperatureData.map(t => t.value));
+  
       setCurrentWeather({
         temperature: currentTemp.value,
         weatherCondition: {
           isRainy: nextFiveHoursPrecip.some(p => p.value > 0.5),
           isWindy: nextFiveHoursWind.some(w => w.value > 8),
         },
+        highTemp,
+        lowTemp,
+        city, // Ensure the city name is set properly
+        day: getDayOfWeek(currentTemp.date) // Get the day of the week
       });
       setHourlyWeather(nextFiveHoursTemps);
       setError('');
@@ -58,38 +65,49 @@ const App = () => {
       setError('Failed to fetch weather data.');
     }
   };
+  const getDayOfWeek = (date) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[new Date(date).getDay()];
+  };
 
   // Handle city search from the dropdown
   const handleCitySearch = (city) => {
     const cityData = cities[city];
     if (cityData) {
       const { lat, lon } = cityData;
-      fetchWeather(lat, lon);
+      fetchWeather(lat, lon, city);  // Pass the city name here
     } else {
       setError('City not found');
       setCurrentWeather(null);
       setHourlyWeather([]);
     }
   };
+  
 
   // Handle temperature conversion
   const convertTemperatures = (isToCelsius) => {
     if (!currentWeather) return;
-
+  
     const updatedCurrentWeather = {
       ...currentWeather,
       temperature: isToCelsius
         ? fahrenheitToCelsius(currentWeather.temperature).toFixed(1)
         : celsiusToFahrenheit(currentWeather.temperature).toFixed(1),
+      highTemp: isToCelsius
+        ? fahrenheitToCelsius(currentWeather.highTemp).toFixed(1)
+        : celsiusToFahrenheit(currentWeather.highTemp).toFixed(1),
+      lowTemp: isToCelsius
+        ? fahrenheitToCelsius(currentWeather.lowTemp).toFixed(1)
+        : celsiusToFahrenheit(currentWeather.lowTemp).toFixed(1),
     };
-
+  
     const updatedHourlyWeather = hourlyWeather.map((hour) => ({
       ...hour,
       value: isToCelsius
         ? fahrenheitToCelsius(hour.value).toFixed(1)
         : celsiusToFahrenheit(hour.value).toFixed(1),
     }));
-
+  
     setCurrentWeather(updatedCurrentWeather);
     setHourlyWeather(updatedHourlyWeather);
   };
@@ -108,7 +126,7 @@ const App = () => {
     const cityData = cities[defaultCity];
     if (cityData) {
       const { lat, lon } = cityData;
-      fetchWeather(lat, lon);
+      fetchWeather(lat, lon, defaultCity); // Pass the city name to fetchWeather
     }
   }, [defaultCity]);
 
@@ -126,18 +144,22 @@ const App = () => {
 
       {/* Current and Hourly Weather Display */}
       {currentWeather && (
-        <div>
-          <CurrentTemperature
-            temperature={currentWeather.temperature}
-            weatherCondition={currentWeather.weatherCondition}
-            unit={isCelsius ? 'C' : 'F'}
-          />
-          <HourlyWeather
-            temperatures={hourlyWeather}
-            unit={isCelsius ? 'C' : 'F'}
-          />
-        </div>
-      )}
+  <div>
+    <CurrentTemperature
+      city={currentWeather.city} // Display the city name
+      day={currentWeather.day} // Display the day of the week
+      temperature={currentWeather.temperature}
+      weatherCondition={currentWeather.weatherCondition}
+      unit={isCelsius ? 'C' : 'F'}
+      highTemp={currentWeather.highTemp} // High temperature
+      lowTemp={currentWeather.lowTemp} // Low temperature
+    />
+    <HourlyWeather
+      temperatures={hourlyWeather}
+      unit={isCelsius ? 'C' : 'F'}
+    />
+  </div>
+)}
     </div>
   );
 };
