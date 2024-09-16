@@ -1,6 +1,6 @@
 import React from 'react';
 
-const HourlyWeather = ({ temperatures = [], precipitations = [], winds = [] ,unit}) => {
+const HourlyWeather = ({ temperatures = [], precipitations = [], winds = [], unit }) => {
   return (
     <div style={styles.container}>
       <h2>Hourly Temperatures</h2>
@@ -10,8 +10,14 @@ const HourlyWeather = ({ temperatures = [], precipitations = [], winds = [] ,uni
             <div key={index} style={styles.card}>
               <p style={styles.time}>{new Date(temp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               <p style={styles.temp}>{temp.value}°{unit}</p>
-              {precipitations[index] > 0.5 && <p style={styles.status}>🌧️ Rainy</p>}
-              {winds[index] > 8 && <p style={styles.status}>💨 Windy</p>}
+
+              {precipitations[index] > 0.5 ? (
+                <p style={styles.status}>🌧️ Rainy</p>
+              ) : winds[index] > 8 ? (
+                <p style={styles.status}>💨 Windy</p>
+              ) : (
+                <p style={styles.status}>☀️ Sunny</p>
+              )}
             </div>
           ))
         ) : (
@@ -21,6 +27,7 @@ const HourlyWeather = ({ temperatures = [], precipitations = [], winds = [] ,uni
     </div>
   );
 };
+
 
 const styles = {
   container: {
